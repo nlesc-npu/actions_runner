@@ -13,4 +13,6 @@ The Docker container is passed the repo url in the `URL` environment variable, a
 
 An example systemd service file is provided, edit this file as needed and copy it to `/etc/systemd/system/`. Reload with `systemctl daemon-reload`, enable the service with `systemctl enable actions_runner.service` and start it with `systemctl start actions_runner.service`. 
 
-
+To build the docker container, edit the example Dockerfile in the `docker` folder as needed, then run e.g.  
+`docker build -t rocm-xrt-gh:latest .`
+The `start.sh` script is the entrypoint of the container, this script configures and starts the Github Actions runner.
