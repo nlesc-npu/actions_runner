@@ -1,0 +1,11 @@
+[Unit]
+Description=Github Actions Runner
+After=docker.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/home/<USERNAME>/actions_runner/main.py
+
+[Install]
+WantedBy=multi-user.target
