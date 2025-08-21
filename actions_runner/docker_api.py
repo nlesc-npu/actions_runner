@@ -4,7 +4,9 @@ class DockerAPIError(Exception):
     pass
 
 class DockerAPI:
-    def __init__(self, image, name):
+    def __init__(self, image, name, runner_label, runner_name):
+        self.runner_label = runner_label
+        self.runner_name = runner_name
         self.container = None
 
         self.client = docker.from_env()
@@ -35,7 +37,7 @@ class DockerAPI:
                 self.container.remove()
 
         config = self.config.copy()
-        config["environment"] = {"URL": url, "REG_TOKEN": registration_token}
+        config["environment"] = {"URL": url, "REG_TOKEN": registration_token, "RUNNER_LABEL": self.runner_label, "RUNNER_NAME": self.runner_name}
         self.container = self.client.containers.run(**config)
 
     def wait(self):
