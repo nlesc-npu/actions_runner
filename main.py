@@ -42,6 +42,8 @@ if __name__ == "__main__":
                         url = f"https://github.com/{owner}/{repo_name}"
                         registration_token = github_api.get_registration_token()["token"]
                         docker_api.start(url, registration_token)
+                        for line in docker_api.logs(stream=True):
+                            logger.info(line.decode().strip())
                         docker_api.wait()
                         logger.info("Job finished")
 
