@@ -7,6 +7,11 @@ cleanup() {
     ./config.sh remove --token ${REG_TOKEN}
 }
 
+unset URL
+unset REG_TOKEN
+unset RUNNER_NAME
+unset RUNNER_LABEL
+
 trap 'cleanup; exit 143' TERM
 trap 'cleanup; exit 130' INT
 
