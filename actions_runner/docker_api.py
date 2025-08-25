@@ -37,7 +37,7 @@ class DockerAPI:
                 self.container.remove()
 
         config = self.config.copy()
-        config["environment"] = {"URL": url, "REG_TOKEN": registration_token, "RUNNER_LABEL": self.runner_label, "RUNNER_NAME": self.runner_name}
+        config["command"] = f"-u {url} -t {registration_token} -l {self.runner_label} -n {self.runner_name}"
         self.container = self.client.containers.run(**config)
 
     def wait(self):

@@ -1,16 +1,40 @@
 #!/bin/bash
+
+URL=""
+REG_TOKEN=""
+RUNNER_NAME=""
+RUNNER_LABELS=""
+
+while getopts "u:t:n:l:" opt; do
+  case "$opt" in
+    u)
+      URL=${OPTARG}
+      ;;
+    t)
+      REG_TOKEN=${OPTARG}
+      ;;
+    n)
+      RUNNER_NAME=${OPTARG}
+      ;;
+    l)
+      RUNNER_LABELS=${OPTARG}
+      ;;
+  esac
+done
+
+if [[ -z "${URL}" || -z "${REG_TOKEN}" || -z "${RUNNER_NAME}"  || -z "${RUNNER_LABELS}" ]] then
+    echo "Not all options are set, exiting"
+    exit 1
+fi
+
+
 . /opt/mlir-aie/utils/env_setup.sh
 
-./config.sh --url ${URL} --token ${REG_TOKEN} --name ${RUNNER_NAME} --labels ${RUNNER_LABEL} --no-default-labels --replace --unattended --disableupdate --ephemeral
+./config.sh --url ${URL} --token ${REG_TOKEN} --name ${RUNNER_NAME} --labels ${RUNNER_LABELS} --no-default-labels --replace --unattended --disableupdate --ephemeral
 
 cleanup() {
     ./config.sh remove --token ${REG_TOKEN}
 }
-
-unset URL
-unset REG_TOKEN
-unset RUNNER_NAME
-unset RUNNER_LABEL
 
 trap 'cleanup; exit 143' TERM
 trap 'cleanup; exit 130' INT
