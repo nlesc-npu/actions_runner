@@ -4,8 +4,11 @@ FROM rocm/dev-ubuntu-24.04:6.4.3-complete
 RUN apt update -y
 RUN apt upgrade -y
 
-# Install required packages for xrt
+# Install required packages for xrt runtime
 RUN apt install -y libboost-filesystem-dev libboost-program-options-dev
+
+# Install required packages for xrt build from source
+RUN apt install -y jq pkg-config ocl-icd-dev ocl-icd-opencl-dev libssl-dev rapidjson-dev systemtap-sdt-dev wget pybind11-dev
 
 # Install required packages for mlir-aie
 RUN apt install -y build-essential cmake python3-venv python3-pip uuid-dev
@@ -20,14 +23,38 @@ RUN usermod -a -G video actions
 
 USER actions
 
-# Install MLIR-AIE V1.0.1
+# Install MLIR-AIE (main, as latest release doesn't support kernel 6.16+)
 WORKDIR /opt/mlir-aie
-RUN git clone https://github.com/Xilinx/mlir-aie -b v1.0.1 .
+RUN git clone https://github.com/Xilinx/mlir-aie .
 RUN python3 -m pip install --break-system-packages --user --upgrade pip
-RUN python3 -m pip install --break-system-packages --user mlir_aie -f https://github.com/Xilinx/mlir-aie/releases/expanded_assets/v1.0.1
-RUN python3 -m pip install --break-system-packages --user https://github.com/Xilinx/llvm-aie/releases/download/nightly/llvm_aie-19.0.0.2025041501+b2a279c1-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+RUN python3 -m pip install --break-system-packages --user cmake
+RUN python3 -m pip install --break-system-packages --user mlir_aie -f https://github.com/Xilinx/mlir-aie/releases/expanded_assets/latest-wheels-2
+RUN python3 -m pip install --break-system-packages --user llvm-aie -f https://github.com/Xilinx/llvm-aie/releases/expanded_assets/nightly
 RUN python3 -m pip install --break-system-packages --user -r python/requirements.txt
 RUN HOST_MLIR_PYTHON_PACKAGE_PREFIX=aie python3 -m pip install --break-system-packages --user -r python/requirements_extras.txt
+
+# Install XRT (manually instead of through provided script as we do not need the kernel module)
+USER root
+WORKDIR /opt/mlir-aie/utils
+
+RUN eval $(grep ^XDNA_SHA= build_drivers.sh) && \
+    git clone https://github.com/amd/xdna-driver.git && \
+    cd xdna-driver && \
+    git checkout "$XDNA_SHA" && \
+    git submodule update --init --recursive
+
+RUN export XDNA_SRC_DIR=$(realpath xdna-driver) && \
+    cd "$XDNA_SRC_DIR/xrt/build" && \
+    ./build.sh -npu -opt && \
+    cd "$XDNA_SRC_DIR/xrt/build/Release" && \
+    apt install -y ./*.deb && \
+    cd "$XDNA_SRC_DIR/build" && \
+    ./build.sh -release -nokmod && \
+    ./build.sh -package -nokmod && \
+    cd "$XDNA_SRC_DIR/build/Release" && \
+    apt install -y ./*.deb
+
+USER actions
 
 # Install github actions runner
 WORKDIR /home/actions/actions-runner

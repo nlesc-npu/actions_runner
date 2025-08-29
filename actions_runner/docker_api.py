@@ -13,8 +13,6 @@ class DockerAPI:
 
         # ulimit increase is needed for XRT
         ulimits = [docker.types.Ulimit(name="memlock", soft=128000000, hard=128000000)]
-        # Mount XRT installation from host (read-only)
-        volumes = {"/opt/xilinx": {"bind": "/opt/xilinx", "mode": "ro"}}
         # Expose GPU (kfd, dri) and NPU (accel) devices on host
         devices = ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri", "/dev/accel:/dev/accel"]
 
@@ -25,7 +23,6 @@ class DockerAPI:
             "devices": devices,
             "hostname": name,
             "name": name,
-            "volumes": volumes,
             "ulimits": ulimits
         }
 
