@@ -23,13 +23,13 @@ RUN usermod -a -G video actions
 
 USER actions
 
-# Install MLIR-AIE (main, as latest release doesn't support kernel 6.16+)
+# Install MLIR-AIE
 WORKDIR /opt/mlir-aie
-RUN git clone https://github.com/Xilinx/mlir-aie .
+RUN git clone -b v1.1.0 https://github.com/Xilinx/mlir-aie .
 RUN python3 -m pip install --break-system-packages --user --upgrade pip
 RUN python3 -m pip install --break-system-packages --user cmake
-RUN python3 -m pip install --break-system-packages --user mlir_aie -f https://github.com/Xilinx/mlir-aie/releases/expanded_assets/latest-wheels-2
-RUN python3 -m pip install --break-system-packages --user llvm-aie -f https://github.com/Xilinx/llvm-aie/releases/expanded_assets/nightly
+RUN python3 -m pip install --break-system-packages --user mlir_aie -f https://github.com/Xilinx/mlir-aie/releases/expanded_assets/v1.1.0
+RUN python3 -m pip install --break-system-packages --user llvm-aie -f https://github.com/Xilinx/llvm-aie/releases/download/nightly/llvm_aie-19.0.0.2025041501+b2a279c1-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
 RUN python3 -m pip install --break-system-packages --user -r python/requirements.txt
 RUN HOST_MLIR_PYTHON_PACKAGE_PREFIX=aie python3 -m pip install --break-system-packages --user -r python/requirements_extras.txt
 
