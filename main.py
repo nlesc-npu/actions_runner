@@ -17,7 +17,7 @@ if __name__ == "__main__":
     runner_label = config["RUNNER_LABEL"]
     access_token = config["TOKEN"]
     repos = config["REPOS"].split(";")
-    interval = config.get("INTERVAL", 30)
+    interval = int(config.get("INTERVAL", 30))
 
     docker_api = DockerAPI(image="rocm-xrt-gh", name="github_runner", runner_label=runner_label, runner_name=runner_label.upper())
 
