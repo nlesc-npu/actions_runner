@@ -1,4 +1,4 @@
-FROM rocm/dev-ubuntu-24.04:6.4.3-complete
+FROM rocm/dev-ubuntu-24.04:7.2-complete
 
 # update packages
 RUN apt update -y
@@ -17,30 +17,33 @@ RUN apt install -y build-essential cmake python3-venv python3-pip uuid-dev
 RUN apt install -y git
 
 # Create non-root runner user
+ARG VIDEOGID
+ARG RENDERGID
+RUN groupadd -og ${VIDEOGID} hostvideo
+RUN groupadd -og ${RENDERGID} hostrender
 RUN useradd -ms /bin/bash actions
-RUN usermod -a -G render actions
-RUN usermod -a -G video actions
+RUN usermod -a -G hostrender actions
+RUN usermod -a -G hostvideo actions
 
 USER actions
 
 # Install MLIR-AIE
 WORKDIR /opt/mlir-aie
-RUN git clone -b v1.1.0 https://github.com/Xilinx/mlir-aie .
+RUN git clone -b v1.2.0 https://github.com/Xilinx/mlir-aie .
 RUN python3 -m pip install --break-system-packages --user --upgrade pip
 RUN python3 -m pip install --break-system-packages --user cmake
-RUN python3 -m pip install --break-system-packages --user mlir_aie -f https://github.com/Xilinx/mlir-aie/releases/expanded_assets/v1.1.0
-RUN python3 -m pip install --break-system-packages --user llvm-aie -f https://github.com/Xilinx/llvm-aie/releases/download/nightly/llvm_aie-19.0.0.2025041501+b2a279c1-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+RUN python3 -m pip install --break-system-packages --user mlir_aie -f https://github.com/Xilinx/mlir-aie/releases/expanded_assets/v1.2.0
+RUN python3 -m pip install --break-system-packages --user llvm-aie -f https://github.com/Xilinx/llvm-aie/releases/download/nightly/llvm_aie-20.0.0.2026012801+201faf7c-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
 RUN python3 -m pip install --break-system-packages --user -r python/requirements.txt
-RUN HOST_MLIR_PYTHON_PACKAGE_PREFIX=aie python3 -m pip install --break-system-packages --user -r python/requirements_extras.txt
 
 # Install XRT (manually instead of through provided script as we do not need the kernel module)
 USER root
 WORKDIR /opt/mlir-aie/utils
 
-RUN eval $(grep ^XDNA_SHA= build_drivers.sh) && \
+RUN eval $(grep ^XDNA_TAG= build_drivers.sh) && \
     git clone https://github.com/amd/xdna-driver.git && \
     cd xdna-driver && \
-    git checkout "$XDNA_SHA" && \
+    git checkout "$XDNA_TAG" && \
     git submodule update --init --recursive
 
 RUN export XDNA_SRC_DIR=$(realpath xdna-driver) && \
@@ -58,7 +61,7 @@ USER actions
 
 # Install github actions runner
 WORKDIR /home/actions/actions-runner
-COPY actions-runner-linux-x64-2.328.0.tar.gz runner.tar.gz
+COPY actions-runner-linux-x64-2.331.0.tar.gz runner.tar.gz
 RUN tar xzf runner.tar.gz && rm runner.tar.gz
 COPY start.sh start.sh
 
