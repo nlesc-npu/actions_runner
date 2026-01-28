@@ -29,6 +29,7 @@ if [[ -z "${URL}" || -z "${REG_TOKEN}" || -z "${RUNNER_NAME}"  || -z "${RUNNER_L
     exit 1
 fi
 
+. /opt/xilinx/xrt/setup.sh
 . /opt/mlir-aie/utils/env_setup.sh
 export PATH=$HOME/.local/bin:$PATH
 ./config.sh --url ${URL} --token ${REG_TOKEN} --name ${RUNNER_NAME} --labels ${RUNNER_LABELS} --no-default-labels --replace --unattended --disableupdate --ephemeral
