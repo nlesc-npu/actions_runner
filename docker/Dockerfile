@@ -61,7 +61,7 @@ USER actions
 
 # Install github actions runner
 WORKDIR /home/actions/actions-runner
-COPY actions-runner-linux-x64-2.331.0.tar.gz runner.tar.gz
+COPY actions-runner-linux-x64-2.334.0.tar.gz runner.tar.gz
 RUN tar xzf runner.tar.gz && rm runner.tar.gz
 COPY start.sh start.sh
 
