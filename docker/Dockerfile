@@ -13,8 +13,29 @@ RUN apt install -y jq pkg-config ocl-icd-dev ocl-icd-opencl-dev libssl-dev rapid
 # Install required packages for mlir-aie
 RUN apt install -y build-essential cmake python3-venv python3-pip uuid-dev
 
+# Install HIP fortran bindings
+RUN apt install -y hipfort-dev
+
 # Install other tools
 RUN apt install -y git
+
+# Replace HIPTensor by install from source (temporary for RDNA3 support)
+RUN apt remove -y hiptensor hiptensor-dev
+WORKDIR /opt/rocm-libraries
+RUN git clone --no-checkout --filter=blob:none https://github.com/ROCm/rocm-libraries.git . && \
+    git sparse-checkout init --cone && \
+    git sparse-checkout set projects/hiptensor && \
+    git checkout develop
+WORKDIR /opt/rocm-libraries/projects/hiptensor
+RUN CC=amdclang CXX=amdclang++ cmake -S . -B build -DGPU_TARGETS=gfx1150 -DHIPTENSOR_BUILD_TESTS=OFF -DHIPTENSOR_BUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/rocm/ && \
+    make -C build -j 8 install
+
+# Install OpenMPI
+COPY openmpi-5.0.10.tar.gz openmpi.tar.gz
+RUN tar xzf openmpi.tar.gz && rm openmpi.tar.gz
+RUN cd openmpi-5.0.10 && \
+    CC=amdclang CXX=amdclang++ FC=amdflang ./configure --with-rocm --prefix=/usr && \
+    make -j install
 
 # Create non-root runner user
 ARG VIDEOGID
