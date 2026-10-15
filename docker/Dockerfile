@@ -1,41 +1,41 @@
-FROM rocm/dev-ubuntu-24.04:7.2-complete
+FROM rocm/dev-ubuntu-26.04:10.1.0-full
 
 # update packages
 RUN apt update -y
+RUN apt install -y software-properties-common
+RUN add-apt-repository ppa:amd-team/xrt
+RUN apt update -y
 RUN apt upgrade -y
 
-# Install required packages for xrt runtime
-RUN apt install -y libboost-filesystem-dev libboost-program-options-dev
-
-# Install required packages for xrt build from source
-RUN apt install -y jq pkg-config ocl-icd-dev ocl-icd-opencl-dev libssl-dev rapidjson-dev systemtap-sdt-dev wget pybind11-dev
+# Install XRT
+RUN apt install -y libxrt2 libxrt-npu2 libxrt-dev libxrt-utils libxrt-utils-npu
 
 # Install required packages for mlir-aie
 RUN apt install -y build-essential cmake python3-venv python3-pip uuid-dev
 
-# Install HIP fortran bindings
-RUN apt install -y hipfort-dev
-
 # Install other tools
-RUN apt install -y git
+RUN apt install -y git wget
 
-# Replace HIPTensor by install from source (temporary for RDNA3 support)
-RUN apt remove -y hiptensor hiptensor-dev
-WORKDIR /opt/rocm-libraries
-RUN git clone --no-checkout --filter=blob:none https://github.com/ROCm/rocm-libraries.git . && \
-    git sparse-checkout init --cone && \
-    git sparse-checkout set projects/hiptensor && \
-    git checkout develop
-WORKDIR /opt/rocm-libraries/projects/hiptensor
-RUN CC=amdclang CXX=amdclang++ cmake -S . -B build -DGPU_TARGETS=gfx1150 -DHIPTENSOR_BUILD_TESTS=OFF -DHIPTENSOR_BUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/rocm/ && \
-    make -C build -j 8 install
+# Install HIP fortran bindings
+RUN wget https://github.com/ROCm/hipfort/archive/refs/tags/rocm-10.1.0.tar.gz -O hipfort-rocm-10.1.0.tar.gz && \
+    tar xzf hipfort-rocm-10.1.0.tar.gz && \
+    rm hipfort-rocm-10.1.0.tar.gz
+
+RUN cd hipfort-rocm-10.1.0 && \
+    cmake -S . -B build -DCMAKE_C_COMPILER=amdclang -DCMAKE_CXX_COMPILER=amdclang++ -DCMAKE_Fortran_COMPILER=amdflang -DCMAKE_INSTALL_PREFIX=/opt/rocm/ && \
+    make -C build -j install
 
 # Install OpenMPI
-COPY openmpi-5.0.10.tar.gz openmpi.tar.gz
-RUN tar xzf openmpi.tar.gz && rm openmpi.tar.gz
-RUN cd openmpi-5.0.10 && \
+WORKDIR /root/
+RUN wget https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.11.tar.gz && \
+    tar xzf openmpi-5.0.11.tar.gz && \
+    rm openmpi-5.0.11.tar.gz
+
+WORKDIR /root/
+RUN cd openmpi-5.0.11 && \
     CC=amdclang CXX=amdclang++ FC=amdflang ./configure --with-rocm --prefix=/usr && \
     make -j install
+
 
 # Create non-root runner user
 ARG VIDEOGID
@@ -50,40 +50,25 @@ USER actions
 
 # Install MLIR-AIE
 WORKDIR /opt/mlir-aie
-RUN git clone -b v1.2.0 https://github.com/Xilinx/mlir-aie .
+RUN git clone -b v1.4.4 https://github.com/Xilinx/mlir-aie .
 RUN python3 -m pip install --break-system-packages --user --upgrade pip
 RUN python3 -m pip install --break-system-packages --user cmake
-RUN python3 -m pip install --break-system-packages --user mlir_aie -f https://github.com/Xilinx/mlir-aie/releases/expanded_assets/v1.2.0
-RUN python3 -m pip install --break-system-packages --user llvm-aie -f https://github.com/Xilinx/llvm-aie/releases/download/nightly/llvm_aie-20.0.0.2026012801+201faf7c-py3-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-RUN python3 -m pip install --break-system-packages --user -r python/requirements.txt
-
-# Install XRT (manually instead of through provided script as we do not need the kernel module)
-USER root
-WORKDIR /opt/mlir-aie/utils
-
-RUN eval $(grep ^XDNA_TAG= build_drivers.sh) && \
-    git clone https://github.com/amd/xdna-driver.git && \
-    cd xdna-driver && \
-    git checkout "$XDNA_TAG" && \
-    git submodule update --init --recursive
-
-RUN export XDNA_SRC_DIR=$(realpath xdna-driver) && \
-    cd "$XDNA_SRC_DIR/xrt/build" && \
-    ./build.sh -npu -opt && \
-    cd "$XDNA_SRC_DIR/xrt/build/Release" && \
-    apt install -y ./*.deb && \
-    cd "$XDNA_SRC_DIR/build" && \
-    ./build.sh -release -nokmod && \
-    ./build.sh -package -nokmod && \
-    cd "$XDNA_SRC_DIR/build/Release" && \
-    apt install -y ./*.deb
+RUN python3 -m pip install --break-system-packages --user mlir_aie -f https://github.com/Xilinx/mlir-aie/releases/expanded_assets/v1.4.4
+RUN python3 -m pip install --break-system-packages --user -r utils/peano-requirements.txt
 
 USER actions
 
+# Add file required for xrt-smi validation
+WORKDIR /home/actions/.local/share/xrt/2.25.00/amdxdna/bins
+RUN git clone https://github.com/Xilinx/VTD /tmp/VTD && \
+    mv /tmp/VTD/archive/strx/* . && \
+    rm -r /tmp/VTD
+
 # Install github actions runner
 WORKDIR /home/actions/actions-runner
-COPY actions-runner-linux-x64-2.334.0.tar.gz runner.tar.gz
-RUN tar xzf runner.tar.gz && rm runner.tar.gz
+RUN wget https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz && \
+    tar xzf actions-runner-linux-x64-2.337.0.tar.gz && \
+    rm  actions-runner-linux-x64-2.337.0.tar.gz
 COPY start.sh start.sh
 
 ENTRYPOINT ["./start.sh"]
