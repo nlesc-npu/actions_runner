@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-from dotenv import dotenv_values
 import logging
 import time
 
-from actions_runner.github_api import GithubAPI
+from dotenv import dotenv_values
+
 from actions_runner.docker_api import DockerAPI
+from actions_runner.github_api import GithubAPI
 
 logger = logging.getLogger("actions_runner")
 
