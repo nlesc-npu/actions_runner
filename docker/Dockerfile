@@ -69,6 +69,11 @@ WORKDIR /home/actions/actions-runner
 RUN wget https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz && \
     tar xzf actions-runner-linux-x64-2.337.0.tar.gz && \
     rm  actions-runner-linux-x64-2.337.0.tar.gz
+
+USER root
+RUN ./bin/installdependencies.sh
+USER actions
+
 COPY start.sh start.sh
 
 ENTRYPOINT ["./start.sh"]
