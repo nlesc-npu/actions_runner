@@ -1,5 +1,6 @@
 import docker
 
+
 class DockerAPIError(Exception):
     pass
 
@@ -50,8 +51,7 @@ class DockerAPI:
     def logs(self, stream=False):
         if self.container is not None:
             if stream:
-                for line in self.container.logs(stream=True):
-                    yield line
+                yield from self.container.logs(stream=True)
             else:
                 return self.container.logs()
         else:
