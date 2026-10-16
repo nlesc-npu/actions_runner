@@ -1,3 +1,6 @@
+[![GPU test](https://github.com/loostrum/actions_runner/actions/workflows/gpu.yml/badge.svg)](https://github.com/loostrum/actions_runner/actions/workflows/gpu.yml)
+[![NPU test](https://github.com/loostrum/actions_runner/actions/workflows/npu.yml/badge.svg)](https://github.com/loostrum/actions_runner/actions/workflows/npu.yml)
+
 Automated self-hosted Github runner through Docker
 
 Create a .env file in the root of the cloned repository with the following contents:
