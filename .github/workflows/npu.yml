@@ -1,0 +1,29 @@
+name: NPU test
+
+# Controls when the workflow will run
+on:
+  push:
+    branches:
+      - "master"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: hx370
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check NPU visibility
+        run: |
+          xrt-smi examine --report all
+
+      - name: Run NPU validation check
+        run: |
+          xrt-smi validate --verbose
+
+      - name: Build and run MLIR-AIE example
+        run: |
+          cd /opt/mlir-aie/programming_examples/basic/passthrough_kernel
+          make
+          make run
