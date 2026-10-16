@@ -25,5 +25,4 @@ jobs:
       - name: Build and run MLIR-AIE example
         run: |
           cd /opt/mlir-aie/programming_examples/basic/passthrough_kernel
-          make
-          make run
+          python3 passthrough_kernel.py
